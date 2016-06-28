@@ -30,24 +30,40 @@ use Symfony\Component\Security\Core\Security;
 class SecurityController extends Controller
 {
     /**
-     * Handle login event
-     *
-     * @param  \Symfony\Component\HttpFoundation\Request  $request
+     * @param  Request $request
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function loginAction(Request $request)
     {
-        $session = $request->getSession();
+        $error = $this->getAuthenticationError($request);
 
+        return $this->render('BluemesaImapAuthenticationBundle:Default:login.html.twig', array(
+            'last_username' => $request->getSession()->get(Security::LAST_USERNAME),
+            'error'         => $error,
+            'token'         => $this->generateToken(),
+        ));
+    }
+
+    /**
+     * @param  Request $request
+     * @return string
+     */
+    protected function getAuthenticationError($request)
+    {
         if ($request->attributes->has(Security::AUTHENTICATION_ERROR)) {
-            $error = $request->attributes->get(Security::AUTHENTICATION_ERROR);
-        } else {
-            $error = $session->get(Security::AUTHENTICATION_ERROR);
+            return $request->attributes->get(Security::AUTHENTICATION_ERROR);
         }
 
-        return $this->render('BluemesaSecurityBundle:Security:login.html.twig', array(
-            'last_username' => $session->get(Security::LAST_USERNAME),
-            'error'         => $error,
-        ));
+        return $request->getSession()->get(Security::AUTHENTICATION_ERROR);
+    }
+
+    /**
+     * @return string
+     */
+    protected function generateToken()
+    {
+        $token = $this->get('security.csrf.token_manager')->getToken('authenticate');
+
+        return $token;
     }
 }
